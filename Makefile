@@ -19,7 +19,7 @@ ishow: ishow.c
 	$(CC) $(CFLAGS) -o ishow ishow.c
 
 check: btest
-	./btest
+	./btest -g
 
 clean:
 	rm -f *.o btest fshow ishow *~

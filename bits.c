@@ -111,7 +111,9 @@ NOTES:
  */
 int absVal(int x)
 {
-    return 42;
+    int y = (x >> 30) >> 1;  // fail static analysis if shift 31 bits
+    // return (x ^ y) - y;
+    return (x ^ y) + (~y + 1);
 }
 
 /*
@@ -124,7 +126,13 @@ int absVal(int x)
  */
 int addOK(int x, int y)
 {
-    return 42;
+    // originally add & 1 behind each expression but failed
+    unsigned temp_x = x;
+    unsigned temp_y = y;
+    int x_sign = (temp_x >> 31);
+    int y_sign = (temp_y >> 31);
+    int x_y_sign = ((temp_x + temp_y) >> 31);
+    return (((x_sign ^ y_sign) & 1) | (~((x_sign & y_sign) ^ x_y_sign) & 1));
 }
 
 /*
@@ -137,7 +145,20 @@ int addOK(int x, int y)
  */
 int allEvenBits(int x)
 {
-    return 42;
+    // cannot use integer constant bigger than 255
+    // int p1 = (x >> 24) & 0xFF;
+    // int p2 = (x >> 16) & 0xFF;
+    // int p3 = (x >> 8) & 0xFF;
+    // int p4 = x & 0xFF;
+
+    // x = p1 & p2 & p3 & p4;
+    // return !((x & 0x55) ^ 0x55);
+    x &= x >> 16;
+    x &= x >> 8;
+    x &= x >> 4;
+    x &= x >> 2;
+
+    return x & 1;
 }
 
 /*
@@ -150,7 +171,20 @@ int allEvenBits(int x)
  */
 int allOddBits(int x)
 {
-    return 42;
+    // change from 0x55 to 0xAA
+    // int p1 = (x >> 24) & 0xFF;
+    // int p2 = (x >> 16) & 0xFF;
+    // int p3 = (x >> 8) & 0xFF;
+    // int p4 = x & 0xFF;
+
+    // x = p1 & p2 & p3 & p4;
+    // return !((x & 0xAA) ^ 0xAA);
+    x &= x >> 16;
+    x &= x >> 8;
+    x &= x >> 4;
+    x &= x >> 2;
+    x >>= 1;
+    return x & 1;
 }
 
 /*
@@ -163,7 +197,12 @@ int allOddBits(int x)
  */
 int anyEvenBit(int x)
 {
-    return 42;
+    x |= x >> 16;
+    x |= x >> 8;
+    x |= x >> 4;
+    x |= x >> 2;
+
+    return x & 1;
 }
 
 /*
@@ -176,7 +215,12 @@ int anyEvenBit(int x)
  */
 int anyOddBit(int x)
 {
-    return 42;
+    x |= x >> 16;
+    x |= x >> 8;
+    x |= x >> 4;
+    x |= x >> 2;
+    x >>= 1;
+    return x & 1;
 }
 
 /*
@@ -188,7 +232,12 @@ int anyOddBit(int x)
  */
 int bang(int x)
 {
-    return 42;
+    x |= x >> 16;
+    x |= x >> 8;
+    x |= x >> 4;
+    x |= x >> 2;
+    x |= x >> 1;
+    return ~x & 1;
 }
 
 /*
@@ -200,7 +249,8 @@ int bang(int x)
  */
 int bitAnd(int x, int y)
 {
-    return 42;
+    // DeMorgan's Theorem (A x B)' = A' + B'
+    return ~(~x | ~y);
 }
 
 /*
@@ -227,7 +277,12 @@ int bitCount(int x)
  */
 int bitMask(int highbit, int lowbit)
 {
-    return 42;
+    int x = ~0;  // 0xFFFFFFFF
+    // highbit += 1;
+    // int high = x << highbit;
+    int high = (x << highbit) << 1;
+    int low = x << lowbit;
+    return (high ^ low) & low;
 }
 
 /*
