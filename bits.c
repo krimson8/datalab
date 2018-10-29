@@ -392,7 +392,13 @@ int byteSwap(int x, int n, int m)
  */
 int conditional(int x, int y, int z)
 {
-    return 42;
+    x |= x << 16;
+    x |= x << 8;
+    x |= x << 4;
+    x |= x << 2;
+    x |= x << 1;
+    x = x >> 30 >> 1;
+    return (x & y) | (~x & z);
 }
 
 /*
@@ -418,7 +424,7 @@ int countLeadingZero(int x)
  */
 int copyLSB(int x)
 {
-    return 42;
+    return x << 30 << 1 >> 30 >> 1;
 }
 
 /*
@@ -430,7 +436,9 @@ int copyLSB(int x)
  */
 int distinctNegation(int x)
 {
-    return 42;
+    // when x is 0 and 0x80000000(largest negative)
+    x = x << 1;
+    return !!(x);
 }
 
 /*
