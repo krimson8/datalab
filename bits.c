@@ -295,7 +295,8 @@ int bitMask(int highbit, int lowbit)
  */
 int bitMatch(int x, int y)
 {
-    return 42;
+    // use solution in bitOr because "|" not available
+    return ~((~(x & y)) & (~(~x & ~y)));
 }
 
 /*
@@ -307,7 +308,8 @@ int bitMatch(int x, int y)
  */
 int bitNor(int x, int y)
 {
-    return 42;
+    // DeMorgan's Theorem (A x B)' = A' + B'
+    return (~x) & (~y);
 }
 
 /*
@@ -319,7 +321,7 @@ int bitNor(int x, int y)
  */
 int bitOr(int x, int y)
 {
-    return 42;
+    return ~((~x) & (~y));
 }
 
 /*
@@ -331,7 +333,15 @@ int bitOr(int x, int y)
  */
 int bitParity(int x)
 {
-    return 42;
+    x ^= x >> 16;
+    x ^= x >> 8;
+    x ^= x >> 4;
+    x ^= x >> 2;
+    x ^= x >> 1;
+
+    // if there is not even amount of 0 the result will be 1
+    x &= 1;
+    return x;
 }
 
 /*
@@ -356,7 +366,7 @@ int bitReverse(int x)
  */
 int bitXor(int x, int y)
 {
-    return 42;
+    return ~((~(x & ~(x & y))) & (~(y & ~(x & y))));
 }
 
 /*

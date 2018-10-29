@@ -2,3 +2,5 @@ btest
 fshow
 ishow
 *.o
+testing
+testing.c
