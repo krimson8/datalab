@@ -380,7 +380,13 @@ int bitXor(int x, int y)
  */
 int byteSwap(int x, int n, int m)
 {
-    return 42;
+    n <<= 3;
+    m <<= 3;
+    int pn = (x >> n) & 0xFF;
+    int pm = (x >> m) & 0xFF;
+
+    x = x ^ (pn << n) ^ (pm << m);
+    return x | (pn << m) | (pm << n);
 }
 
 /*
@@ -462,7 +468,8 @@ int dividePower2(int x, int n)
  */
 int evenBits(void)
 {
-    return 42;
+    int x = 0x55;
+    return x | (0x55 << 8) | (0x55 << 16) | (0x55 << 24);
 }
 
 /*
@@ -478,7 +485,8 @@ int evenBits(void)
  */
 int ezThreeFourths(int x)
 {
-    return 42;
+    x += (x << 1);
+    return (x + ((x >> 30 >> 1) & 3)) >> 2;
 }
 
 /*
@@ -492,7 +500,12 @@ int ezThreeFourths(int x)
  */
 int fitsBits(int x, int n)
 {
-    return 42;
+    return !(((x >> (n + ~0)) + 1) >> 1);
+    // int y = x;
+    // x = ~x + 1;
+    // x &= (1 << n) + ~0;
+    // x = ~x + 1;
+    // return !(x ^ y);
 }
 
 /*
@@ -505,7 +518,7 @@ int fitsBits(int x, int n)
  */
 int fitsShort(int x)
 {
-    return 42;
+    return !(((x >> (16 + ~0)) + 1) >> 1);
 }
 
 /*
@@ -521,7 +534,12 @@ int fitsShort(int x)
  */
 unsigned floatAbsVal(unsigned uf)
 {
-    return 42;
+    unsigned exp = (uf >> 23) & 0xFF;
+    unsigned significand = uf & 0x7FFFFF;
+    if (exp == 0xFF && significand != 0) {
+        return uf;
+    }
+    return uf & 0x7FFFFFFF;
 }
 
 /*
