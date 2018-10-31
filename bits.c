@@ -109,6 +109,10 @@ NOTES:
  *   Max ops: 10
  *   Rating: 4
  */
+
+#include <stdio.h>
+
+
 int absVal(int x)
 {
     int y = (x >> 30) >> 1;  // fail static analysis if shift 31 bits
@@ -145,14 +149,17 @@ int addOK(int x, int y)
  */
 int allEvenBits(int x)
 {
-    // cannot use integer constant bigger than 255
-    // int p1 = (x >> 24) & 0xFF;
-    // int p2 = (x >> 16) & 0xFF;
-    // int p3 = (x >> 8) & 0xFF;
-    // int p4 = x & 0xFF;
+    // first solution
+    /*
+    int p1 = (x >> 24) & 0xFF;
+    int p2 = (x >> 16) & 0xFF;
+    int p3 = (x >> 8) & 0xFF;
+    int p4 = x & 0xFF;
 
-    // x = p1 & p2 & p3 & p4;
-    // return !((x & 0x55) ^ 0x55);
+    x = p1 & p2 & p3 & p4;
+    return !((x & 0x55) ^ 0x55);
+    */
+    // second solution
     x &= x >> 16;
     x &= x >> 8;
     x &= x >> 4;
@@ -403,7 +410,7 @@ int conditional(int x, int y, int z)
     x |= x << 4;
     x |= x << 2;
     x |= x << 1;
-    x = x >> 30 >> 1;
+    x = x >> 30 >> 1;  // sign extension
     return (x & y) | (~x & z);
 }
 
@@ -535,8 +542,8 @@ int fitsShort(int x)
 unsigned floatAbsVal(unsigned uf)
 {
     unsigned exp = (uf >> 23) & 0xFF;
-    unsigned significand = uf & 0x7FFFFF;
-    if (exp == 0xFF && significand != 0) {
+    unsigned fraction = uf & 0x7FFFFF;
+    if (exp == 0xFF && fraction != 0) {
         return uf;
     }
     return uf & 0x7FFFFFFF;
@@ -556,7 +563,34 @@ unsigned floatAbsVal(unsigned uf)
  */
 int floatFloat2Int(unsigned uf)
 {
-    return 42;
+    // value of float
+    // (-1) ^ S * 2 ^ (E - 127) * 1.fraction
+    unsigned sign = (uf >> 31) & 1;
+    int exp = ((uf >> 23) & 0xFF) - 127;
+    unsigned fraction = uf & 0x7FFFFF;
+    fraction |= 0x800000;
+    if (exp < 0) {
+        return 0;
+    } else if (exp > 31) {
+        return 0x80000000u;
+    }
+
+    // 23 bit of fraction 1.XX.......
+    // if exp < 23 because is already a unsigned, then must right shift
+    // right shift 23 - exp
+    // only if exp > 23 then left shift exp - 23(may be 0)
+    // if exp < 0 then 23 + abs(exp)
+
+    if (exp < 23) {
+        fraction >>= 23 - exp;
+    } else if (exp > 23) {
+        fraction <<= exp - 23;
+    }
+
+    if (sign) {
+        fraction = ~fraction + 1;
+    }
+    return fraction;
 }
 
 /*
@@ -570,6 +604,26 @@ int floatFloat2Int(unsigned uf)
  */
 unsigned floatInt2Float(int x)
 {
+    // int sign = x & 0x80000000;
+    // int exp = 0;
+    // int sd = 0;
+
+    // // if (x == 0)
+    // //     return 0;
+    // // else if (x == 0x80000000)
+    // //     return 0xcf000000;
+
+    // if(sign)
+    //     x = ~x + 1;
+
+    // while(x) {
+    //     x /= 2;
+    //     exp++;
+    // }
+    // exp--; //make it 1.XXX
+
+
+
     return 42;
 }
 
@@ -586,7 +640,19 @@ unsigned floatInt2Float(int x)
  */
 int floatIsEqual(unsigned uf, unsigned ug)
 {
-    return 42;
+    unsigned esf = uf & 0x7FFFFFFF;  // exp + fraction
+    unsigned esg = ug & 0x7FFFFFFF;
+
+    // printf("f : %x -- g : %x\n", esf, esg);
+    if (!esf && !esg) {
+        return 1;
+    }
+
+    if (esf > 0x7F800000 || esg > 0x7F800000) {
+        return 0;
+    }
+
+    return uf == ug;
 }
 
 /*
@@ -602,7 +668,38 @@ int floatIsEqual(unsigned uf, unsigned ug)
  */
 int floatIsLess(unsigned uf, unsigned ug)
 {
-    return 42;
+    int uf_sign = (uf >> 31) & 1;
+    int ug_sign = (ug >> 31) & 1;
+    int uf_exp = (uf >> 23) & 0xFF;
+    int ug_exp = (ug >> 23) & 0xFF;
+    int uf_frac = uf & 0x7FFFFF;
+    int ug_frac = ug & 0x7FFFFF;
+
+    unsigned esf = uf & 0x7FFFFFFF;  // exp + fraction
+    unsigned esg = ug & 0x7FFFFFFF;
+
+    // printf("f : %x -- g : %x\n", uf_exp, ug_exp);
+    if (!esf && !esg) {
+        return 0;
+    }
+
+    if (esf > 0x7F800000 || esg > 0x7F800000) {
+        return 0;
+    }
+
+    if (uf_sign == ug_sign) {
+        if (uf_exp == ug_exp) {
+            if (uf_frac == ug_frac) {
+                return 0;
+            }
+            return (uf_frac < ug_frac) ^ uf_sign;
+        } else {
+            return (uf_exp < ug_exp) ^ uf_sign;
+        }
+    } else {
+        return uf_sign > ug_sign;  // negative is 1 so > 0
+    }
+    return 0;
 }
 
 /*
@@ -618,7 +715,10 @@ int floatIsLess(unsigned uf, unsigned ug)
  */
 unsigned floatNegate(unsigned uf)
 {
-    return 42;
+    unsigned esf = uf & 0x7FFFFFFF;
+    if (esf > 0x7F800000)
+        return uf;
+    return uf ^ 0x80000000;
 }
 
 /*
@@ -637,7 +737,13 @@ unsigned floatNegate(unsigned uf)
  */
 unsigned floatPower2(int x)
 {
-    return 42;
+    // bias = 127, 255 > 127 + x >= 0
+    if (x < -127)
+        return 0;
+    if (x > 127)
+        return 0x7F800000;
+    x += 127;
+    return x <<= 23;
 }
 
 /*
@@ -653,7 +759,26 @@ unsigned floatPower2(int x)
  */
 unsigned floatScale1d2(unsigned uf)
 {
-    return 42;
+    unsigned esf = uf & 0x7FFFFFFF;
+    if (esf >= 0x7F800000)
+        return uf;
+
+    int sign = uf & 0x80000000;
+    int exp = (uf >> 23) & 0xFF;
+
+    // printf("-- %x --%x\n", exp, uf);
+
+    if (exp > 1) {  // bias=127, so exp<=0 right shift fraction
+        exp -= 1;
+        exp <<= 23;
+        return (uf &= 0x807FFFFF) | exp;
+    }
+
+    if ((uf & 0x3) == 0x3) {
+        uf = uf + 0x2;
+    }
+
+    return ((uf >> 1) & 0x7fffff) | sign;
 }
 
 /*
@@ -669,7 +794,21 @@ unsigned floatScale1d2(unsigned uf)
  */
 unsigned floatScale2(unsigned uf)
 {
-    return 42;
+    unsigned esf = uf & 0x7FFFFFFF;
+    if (esf >= 0x7F800000)
+        return uf;
+
+    int sign = uf & 0x80000000;
+    int exp = (uf >> 23) & 0xFF;
+
+    if (exp == 0)
+        return (uf <<= 1) | sign;
+    else if (exp == 255)
+        return uf;
+
+    exp += 1;
+    exp <<= 23;
+    return (uf &= 0x807FFFFF) | exp;
 }
 
 /*
@@ -685,6 +824,20 @@ unsigned floatScale2(unsigned uf)
  */
 unsigned floatScale64(unsigned uf)
 {
+    // unsigned esf = uf & 0x7FFFFFFF;
+    // if(esf >= 0x7F800000) return uf;
+
+    // int sign = uf & 0x80000000;
+    // int exp = (uf >> 23) & 0xFF;
+
+    // if(exp == 0)
+    //     return (uf <<= 6) | sign;
+    // else if(exp == 249)
+    //     return uf;
+
+    // exp += 6;
+    // exp <<= 23;
+    // return (uf &= 0x807FFFFF) | exp;
     return 42;
 }
 
@@ -712,7 +865,7 @@ unsigned floatUnsigned2Float(unsigned u)
  */
 int getByte(int x, int n)
 {
-    return 42;
+    return (x >> (n << 3)) & 0xFF;
 }
 
 /*
@@ -725,7 +878,18 @@ int getByte(int x, int n)
  */
 int greatestBitPos(int x)
 {
-    return 42;
+    x |= x >> 16;
+    x |= x >> 8;
+    x |= x >> 4;
+    x |= x >> 2;
+    x |= x >> 1;
+    // change the left side of most_significant bit to 1
+    // then right shift 1, and take the & result
+
+    // if x>= 0, sign bit = 0, no influence
+    // if x is neg, sign = 1, after ~x it becomes all 0
+    // thus ^ 0x80000000 to give the sign bit value 1
+    return x & ((~x >> 1) ^ 0x80000000);
 }
 
 /* howManyBits - return the minimum number of bits required to represent x in
@@ -742,7 +906,18 @@ int greatestBitPos(int x)
  */
 int howManyBits(int x)
 {
-    return 0;
+    // negative number start with 111.. and must be neighbour with 0
+    // eg. +3 : ...011 3 bit
+    // positive number start with 000.. and must be neighbour with 0
+    // eg. -3 : ...101 3 bit
+    // int n = 0;
+    // n += ((!!(x & ((~0) << (n + 16)))) << 4);
+    // n += ((!!(x&((~0)<<(n+8)))) << 3);
+    // n += ((!!(x&((~0)<<(n+4)))) << 2);
+    // n += ((!!(x&((~0)<<(n+2)))) << 1);
+    // n += (!!(x&((~0)<<(n+1))));
+    // return (1<<n)&x;
+    return 42;
 }
 
 /*
