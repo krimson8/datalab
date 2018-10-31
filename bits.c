@@ -931,7 +931,7 @@ int howManyBits(int x)
  */
 int implication(int x, int y)
 {
-    return 42;
+    return (!x) | (x & y);
 }
 
 /*
@@ -970,7 +970,7 @@ int isAsciiDigit(int x)
  */
 int isEqual(int x, int y)
 {
-    return 42;
+    return !(x ^ y);
 }
 
 /*
@@ -982,7 +982,7 @@ int isEqual(int x, int y)
  */
 int isGreater(int x, int y)
 {
-    return 42;
+    return !(x ^ y);
 }
 
 /*
@@ -1018,7 +1018,7 @@ int isLessOrEqual(int x, int y)
  */
 int isNegative(int x)
 {
-    return 42;
+    return ((x >> 30 >> 1) & 1);
 }
 
 /*
@@ -1030,7 +1030,7 @@ int isNegative(int x)
  */
 int isNonNegative(int x)
 {
-    return 42;
+    return !((x >> 30 >> 1) & 1);
 }
 
 /*
@@ -1043,7 +1043,7 @@ int isNonNegative(int x)
  */
 int isNonZero(int x)
 {
-    return 42;
+    return ((x | (~x + 1)) >> 30 >> 1) & 1;
 }
 
 /*
@@ -1055,7 +1055,7 @@ int isNonZero(int x)
  */
 int isNotEqual(int x, int y)
 {
-    return 42;
+    return !!(x ^ y);
 }
 
 /*
@@ -1079,7 +1079,7 @@ int isPallindrome(int x)
  */
 int isPositive(int x)
 {
-    return 42;
+    return !((x >> 30 >> 1) & 1) & !!x;
 }
 
 /*
@@ -1104,7 +1104,10 @@ int isPower2(int x)
  */
 int isTmax(int x)
 {
-    return 42;
+    // 0111111 is maximum, not and left shift will cause all zero
+    // except the case where x is zero
+    int y = (~x) << 1;
+    return (!y) & (!!(~x));
 }
 
 /*
@@ -1116,7 +1119,8 @@ int isTmax(int x)
  */
 int isTmin(int x)
 {
-    return 42;
+    int y = x << 1;
+    return (!y) & (!!x);
 }
 
 /*
@@ -1128,7 +1132,7 @@ int isTmin(int x)
  */
 int isZero(int x)
 {
-    return 42;
+    return !x;
 }
 
 /*
@@ -1141,7 +1145,7 @@ int isZero(int x)
  */
 int leastBitPos(int x)
 {
-    return 42;
+    return x & ((~x) + 1);
 }
 
 /*
@@ -1167,7 +1171,12 @@ int leftBitCount(int x)
  */
 int logicalNeg(int x)
 {
-    return 42;
+    x |= x >> 16;
+    x |= x >> 8;
+    x |= x >> 4;
+    x |= x >> 2;
+    x |= x >> 1;
+    return (x & 1) ^ 1;
 }
 
 /*
@@ -1180,7 +1189,11 @@ int logicalNeg(int x)
  */
 int logicalShift(int x, int n)
 {
-    return 42;
+    x >>= n;
+    int mask = 1 << 30 << 1;
+    mask >>= n;
+    mask <<= 1;
+    return x & ~mask;
 }
 
 /*
@@ -1213,7 +1226,7 @@ int minimumOfTwo(int x, int y)
  */
 int minusOne(void)
 {
-    return 42;
+    return ~0;
 }
 
 /*
@@ -1229,6 +1242,8 @@ int minusOne(void)
  */
 int multFiveEighths(int x)
 {
+    // x += (x << 2);
+    // return (x + ((x >> 30 >> 1) & 3)) >> 3;
     return 42;
 }
 
@@ -1241,7 +1256,7 @@ int multFiveEighths(int x)
  */
 int negate(int x)
 {
-    return 42;
+    return ~x + 1;
 }
 
 /*
@@ -1252,7 +1267,8 @@ int negate(int x)
  */
 int oddBits(void)
 {
-    return 42;
+    int x = 0xAA;
+    return x | (x << 8) | (x << 16) | (x << 24);
 }
 
 /*
@@ -1265,7 +1281,8 @@ int oddBits(void)
  */
 int remainderPower2(int x, int n)
 {
-    return 42;
+    int mask = 1 << n;
+    return (!n) & (x & (~mask));
 }
 
 /*
